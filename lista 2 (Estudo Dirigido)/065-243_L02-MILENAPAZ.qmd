@@ -1,0 +1,111 @@
+---
+title: "Funções Recursivas - Exercícios"
+author: "Milena Paz Freitas"
+format: html
+editor: visual
+self-contained: true
+crossref:
+  labels: roman
+---
+
+## Suavização Exponencial:
+
+Função `ewma()`:
+
+```{r}
+ewma <- function(x, lambda, mi0){
+        Y <- numeric(length(x) + 1)
+        Y[1] <- mi0
+        for(i in seq_along(Y)[-1]){
+            Y[i] <- lambda*x[i - 1] + (1 - lambda)*Y[i - 1]
+        }
+        return(Y)
+}
+```
+
+```{r}
+dados<-as.vector(read.table("Tab7.1-Costa.txt",dec=","))[[1]]
+alvo<- 100
+peso<- 0.2
+medias.ew<-ewma(dados, lambda=peso,mi0=alvo)
+
+```
+
+**Enunciado:** Baseando-se na equação de recorrência advinda das expressõs de $Y_i$, elabore uma função em R para cálculo da média móvel exponencialmente ponderada das observações individuais de característica de qualidade, armazenadas no conjunto de dados `Tab7.1-Costa.txt`. No código deve-se utilizar obrigatoriamente a abordagem recursiva. Compare (e comente) o desempenho de sua função com aquela baseada na abordagem iterativa (loop em for) que foi apresentada nesse texto (função `ewma()`).
+
+```{r}
+ewma.r <- function(x,k,lambda,valor.anterior)
+{
+  #interrompe a recursividade
+  if(k<1 | k>length(x))
+    return()
+  #atualiza valor.anterior
+  valor.anterior <- lambda*x[k] + (1-lambda)*valor.anterior
+  
+  #recursão
+  #concatena o valor calculado com os seguintes,formando um vetor
+  return( c(valor.anterior, ewma.r(x,k+1,lambda,valor.anterior) ))
+}
+Y <- alvo
+Y <- append(Y, ewma.r(dados,k=1,lambda=peso,Y))
+
+#verifica se o resultado está igual ao esperado
+identical(medias.ew,Y)
+#agora para comparar o desempenho das funções
+library(microbenchmark)
+(res<-microbenchmark(ewma= ewma(dados,peso,alvo),
+    ewma.r = append(alvo, ewma.r(dados,k=1,lambda=peso,alvo)),
+    times=500))
+ggplot2::autoplot(res)
+#vemos, então, que a diferença de performance é marginal:
+#a diferença é de apenas alguns microssegundos
+```
+
+## Coeficientes Binomiais
+
+$$
+\binom{n}{k}= \frac{n}{k} \binom{n-1}{k-1}, \text{ com} \binom{1}{0}=1 
+$$ {#eq-A}
+
+$$
+\binom{n}{k} = \binom{n}{k-1}\frac{n-k+1}{k}, \text{ com} \binom{n}{0}=1
+$$ {#eq-B}
+
+```{r}
+coefBin <- function(n, k){
+              # condições de parada
+            if(k > n) return(0)
+            if(k == 0 || k == n) return(1)
+
+              # recursão
+            valor <- coefBin(n - 1, k - 1) + coefBin(n - 1, k)
+            return(valor)
+}
+```
+
+**Enunciado:** Baseando-se na equação de recorrência advinda das expressões (I) OU (II), elabore uma função em R para cálculo de coeficiente binomial definida para $n\in \mathbb{R}$ e $k \in \mathbb{Z}$. No código deve-se utilizar obrigatoriamente a abordagem recursiva. Compare (e comente) o desempenho de sua função com aquela baseada em recursão multinomial e com a função `choose()`, do R Base.
+
+```{r}
+#baseado na equacao I
+coefBin.1<- function(n,k){
+  if(n<=0||k<=0) return(1)
+  return(n*coefBin.1(n-1,k-1)/k)
+}
+#usando calculo vetorizado
+coefBin.vet<- function(n,k){
+  if(n-k<k) k<-n-k
+  prod(n:(n-k+1)/1:k)
+}
+
+#comparando o desempenho das funcoes
+(res<-microbenchmark(coefBin.1=coefBin.1(20,10),
+                    coefBin.vet=coefBin.vet(20,10),
+                    coefBin=coefBin(20,10),
+                    choose=choose(20,10), unit="ms"))
+ggplot2::autoplot(res)
+#podemos ver que a funçao coefBin é muito mais lenta que as demais;
+#alem disso, nota-se que a função choose é muito bem otimizada,
+#sendo, de longe, a mais rápida das quatro.
+#A função usando calculo vetorizado é a segunda mais rápida,
+#monstrando que esse é o ponto mais forte do R
+```

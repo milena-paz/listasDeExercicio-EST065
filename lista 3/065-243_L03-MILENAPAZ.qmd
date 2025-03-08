@@ -1,0 +1,260 @@
+---
+title: "Lista #3 - Funções"
+author: "Milena Paz Freitas"
+date: today
+format: html
+editor: visual
+lang: "pt-BR"
+self-contained: true
+table-of-contents: true
+---
+
+## Questão 1
+
+**Enunciado:** O data frame `fumig {DAAGxtras}` apresenta dados de uma série de experimentos em que o produto foi exposto a um inseticida durante um período de tempo de 2 horas. As concentrações do inseticida foram medidas nos tempos 5, 10, 30, 60, 90 e 120 minutos. O código fornecido abaixo calcula um produto concentração-tempo (c-t) que mede a exposição ao inseticida, levando à medida `ctsum`. Verifique o código das três alternativas de função dadas abaixo e o data frame `fumig` que é o *default* para o argumento `df`:
+
+a.  Aplique todas as três funções ao conjunto de dados em questão (fumig) e verifique se elas apresentam o mesmo resultado.
+
+b.  Documente o código da função `calcCT1`, explicando o que cada linha faz.
+
+c.  Faça uma verificação visual e comente: as medições de concentração do inseticida são mais variáveis em alguns momentos do que em outros?
+
+d.  Qual função é mais rápida? \[Verifique a possível diferença, repetindo a execução da função 1000 ou mais vezes.\].
+
+```{r}
+data(fumig,package="DAAGxtras")
+ ## Function "calcCT1"
+"calcCT1" <- function(df=fumig,
+                       times=c(5,10,30,60,90,120),
+                       ctcols=3:8){
+  # B)
+  ##----------------------------------------------------------##
+  #df= data frame
+  #times= momento em que foram medidas as concentracoes(nao e usado)
+  #ctcols= índices das colunas que apresentam as concentraçoes
+  ##----------------------------------------------------------##
+  #armazena os coeficientes
+  multiplier <- c(7.5,12.5,25,30,30,15)
+  #armazena numero de colunas de df
+  m <- dim(df)[1]
+  #cria o vetor para armazenar as medidas
+  ctsum <- numeric(m)
+  ##
+  for(i in 1:m){
+    #armazena a linha i de df
+    y <- unlist(df[i, ctcols])
+    #armazena a soma dos produtos entre as
+    #concentraçoes e seus respectivos coeficientes
+    ctsum[i] <- sum(multiplier*y)/60
+  } #fim do loop
+  ##
+  #substitui as colunas de concentração pela medida
+  #ctsum (posicionada à esquerda)
+  df <- cbind(ctsum=ctsum, df[,-ctcols])
+  df
+} #fim "calcCT1"
+##
+## Function "calcCT2"
+"calcCT2" <- function(df=fumig,
+                      times=c(5,10,30,60,90,120),
+                      ctcols=3:8){
+  multiplier <- c(7.5,12.5,25,30,30,15)
+  mat <- as.matrix(df[, ctcols])
+  ctsum <- mat%*%multiplier/60
+  cbind(ctsum=ctsum, df[,-ctcols])
+}
+##
+## Function "calcCT3"
+"calcCT3" <- function(df=fumig,
+                      times=c(5,10,30,60,90,120),
+                      ctcols=3:8){
+  multiplier <- c(7.5,12.5,25,30,30,15)
+  mat <- as.matrix(df[, ctcols])
+  ctsum <- apply(mat, 1,
+    FUN=function(x) sum(x*multiplier))/60
+  cbind(ctsum=ctsum, df[,-ctcols])
+}
+## A)
+#armazena os resultados
+r1<-calcCT1()
+r2<-calcCT2()
+r3<-calcCT3()
+#Verificando se todas as funções retornam o mesmo resultado
+all( sapply(list(r2,r3), function(x) all.equal(r1,x)) )
+#tudo ok!
+## C)
+#Aos 5 min, a concentração parece flutuar mais entre as amostras
+apply(fumig[,3:8],2, sd)
+diff(apply(fumig[,3:8],2, range))
+#Observamos aqui que, apesar da amplitude aos 5 min ser a maior,
+#o maior desvio padrão amostral é aos 30 min
+## D)
+#Verificando qual função é mais rápida
+microbenchmark::microbenchmark(
+  calcCT1(),
+  calcCT2(),
+  calcCT3(),
+  times=5E3L
+)
+#podemos observar que, em termos de rapidez:
+# calcCT1 < calcCT3 < calcCT2
+##
+
+
+```
+
+## Questão 2
+
+**Enunciado:** A expressão da congruência de Zeller é dada por: $$
+f = ([2,6m - 0,2] + k + y + [y/4] + [c/4] - 2c)\mod7
+$$ em que: `[x]` é a parte inteira de x. (ex.: \[7,5\] = 7).
+
+A congruência de Zeller retorna o dia da semana (f) dados:
+
+`k`: dia do mês;
+
+`y`: o ano no século
+
+`c`: os primeiros 2 dígitos do ano (o número do século)
+
+`m`: o número do mês (onde janeiro é o mês 11 do ano anterior, fevereiro é o mês 12 do ano anterior, março é o mês 1, etc.)
+
+Por exemplo, a data 21/07/1963 tem `m = 5`, `k = 21`, `c = 19`, `y = 63`; enquanto a data 21/02/1962 tem `m = 12`, `k = 21`, `c = 19` e `y = 62`.
+
+a.  Escreva uma função dia.semana(dia, mes, ano) que retorne o dia da semana quando receber as entradas numéricas do dia, mês e ano. Observe que `f = 1` denota domingo; `f = 2`, segunda-feira etc.
+b.  Sua função funciona se os argumentos de entrada: dia, mês e ano forem vetores (de mesmo tamanho e com entradas válidas)?
+
+```{r}
+##A)
+dia.semana<- function(dia=as.numeric(substr(Sys.Date(),9,10)),
+                      mes=as.numeric(substr(Sys.Date(),6,7)),
+                      ano=as.numeric(substr(Sys.Date(),1,4))){
+  #DEFAULT: dia de hoje
+  #vetor com todos os nomes dos dias da semana
+  diasSemana<- c("Domingo",paste0(c('Segunda','Terça','Quarta','Quinta','Sexta'),"-feira"),
+                 "Sábado")
+  #verifica quais sao janeiro ou fevereiro
+  janfev <- mes<3
+  #define ano no seculo Y
+  Y<-ano%%100
+  Y[which(janfev)] <- (Y[which(janfev)] - 1)
+  #define o número do século C
+  C<-floor(ano/100)
+  #define dia do mes K
+  K<- dia
+  #define o número do mês M
+  M<- numeric(length(mes))
+  M[which(janfev)] <- mes[which(janfev)]+10
+  M[which(!janfev)] <- mes[which(!janfev)]-2
+  #calcula a congruencia de Zeller
+  f<-(floor(2.6*M-0.2)+K+Y+floor(Y/4)+floor(C/4)-2*C)%%7
+  #retorna o nome do dia da semana correspondente ao valor de f
+  return(diasSemana[f+1])
+}#FIM FUNCAO dia.semana
+dia.semana()
+## B)
+#Sim, funciona:
+datas<- list(c(1,2,3),c(1,8,9),c(1966,1968,1974))
+dia.semana(datas[[1]],datas[[2]],datas[[3]])
+# :D
+```
+
+## Questão 3
+
+**Enunciado** (Funções diversas):
+
+a.  Crie uma função que, dado um vetor numérico x, retorna os dígitos (de 0 a 9) que não estão em x. Ex.: Se x = (0, 2, 4, 8) a função deve retornar (1, 3, 5, 6, 7, 9).
+b.  Crie uma função em que dadas duas strings (com apenas uma palavra cada), seja verificado se uma string é um anagrama da outra.
+c.  Crie uma função em que, dada uma palavra, seja retornado a posição das letras dessa palavra no alfabeto. Por exemplo, se a palavra for `"abc"`, a função retornará `1 2 3`.
+
+```{r}
+#funcao auxiliar, separa caracteres de uma string
+#(usada na questão 4 também)
+separa <- function(string){
+  return(unlist(strsplit(string,split="")))
+}
+##A)
+faltam<-function(x){
+  algs <- 0:9
+  return(algs[-(x+1)])
+}
+faltam(c(0,2,4,8))
+faltam(1:9)
+##B)
+e.anagrama<-function(palav.1,palav.2){
+  palav.1 <-separa(palav.1)
+  palav.2 <-separa(palav.2)
+  return(identical(palav.1[order(palav.1)],palav.2[order(palav.2)]))
+}
+e.anagrama("roma","amor")
+e.anagrama("cama","coma")
+##C)
+posAlfabeto<-function(palav){
+  palav <-separa(palav)
+  A<-factor(palav, levels=letters)
+  return(as.numeric(A))
+}
+posAlfabeto("abc")
+posAlfabeto("estatistica")
+```
+
+## Questão 4
+
+**Enunciado** (CPF): Por meio da lógica matemática do funcionamento do Cadastro de Pessoas Físicas (CPF), utilizado pela Secretaria Especial da Receita Federal do Brasil é possível identificar a região do CPF. Colocando de outra maneira, dado um número do CPF pode-se saber a Região Fiscal na qual ele foi emitido. O número de inscrição no Cadastro de Pessoas Físicas tem onze dígitos. Os oito primeiros dígitos decimais formam um número-base definido pela receita Federal no momento da inscrição. O nono dígito define a Região Fiscal responsável pela inscrição. O penúltimo, é o dígito verificador dos nove primeiros. O último, é o dígito verificador dos nove anteriores a ele.
+
+Consulte o post “A Matemática nos Documentos: A Matemática dos CPF's” e construa uma função que retorne a Região Fiscal de emissão de qualquer CPF e confira os dígitos verificadores (dois últimos algarismos). De maneira geral, os Dígitos Verificadores (DV) são dígitos incorporados a números para possibilitar a detecção de erros de digitação. Sua função deve aceitar como entrada apenas as strings no formato **ABC.DEF.GHI-JK**, sendo que as letras de A a K são algarismos decimais. Valide sua função usando o número de seu CPF (não precisa apresentar seu CPF!) e determine a região Fiscal de emissão e os dígitos verificadores do CPF 040.148.078-XY. O post citado acima é encontrado na url abaixo:
+
+-   <http://clubes.obmep.org.br/blog/a-matematica-nos-documentos-a-matematica-dos-cpfs/>
+
+```{r}
+#funcao que calcula o verificador, com vetor caracter ou numerico
+verificador<-function(cpf){
+  cpf<- as.numeric(cpf)
+  resto<-sum(cpf[1:9]*10:2)%%11
+  if(resto==1||resto==0) return(0)
+  return(11-resto)
+}# FIM FUNCAO verificador
+#testando com os primeiros 9 digitos de meu cpf, essa função funciona :)
+
+vCPF<-function(cpf){
+  #---------------------------------------------------------#
+  #      O CPF deve estar no formato: "ABC.DEF.GHI-JK"
+  #verifica se o cpf é uma string de 14 caracteres
+  stopifnot(is.character(cpf),
+            nchar(cpf)==14)
+
+  cpf.sep <- separa(cpf)
+  cpf.num <- cpf.sep[c(1:3,5:7,9:11,13,14)]
+  #verifica se o cpf tem pontos e traço nas posicoes corretas
+  #e se os outros caracteres sao algarismos
+  stopifnot(all(cpf.sep[c(4,8,12)]==c(".",".","-")),
+            all(!is.na(as.numeric(cpf.num))))
+  #---------------------------------------------------------#
+  #valida digitos verificadores
+  V1<- as.numeric(cpf.num[11])
+  if(verificador(cpf.num != V1))
+    simpleError("CPF inválido: décimo dígito incorreto")
+  V2<- as.numeric(cpf.num[11])
+  if(verificador(cpf.num[-1] != V1))
+    simpleError("CPF inválido: décimo-primeiro dígito incorreto")
+  #retorna a região fiscal
+  nomes<-c("DF, GO, MS, MT e TO","AC, AM, AP, PA, RO e RR","CE, MA e PI",
+          "AL, PB, PE e RN","BA e SE","MG","ES e RJ","SP","PR e SC","RS")
+  RF <- factor(cpf.num[9],labels=nomes,levels=c(1:9,0))
+  return(paste("A região fiscal do CPF dado é:",as.character(RF)))
+}# FIM FUNCAO vCPF
+
+###
+cpf<-c(0,4,0,1,4,8,0,7,8)
+#completando o cpf
+cpf<-append(cpf,verificador(cpf))
+cpf<-append(cpf,verificador(cpf[-1]))
+#colocando ele no formato correto
+cpf<-as.character(cpf)
+sinais<-c(".",".","-")
+for(i in 1:3) cpf<-append(cpf,sinais[i],after=4*i-1)
+rm(sinais,i)
+cpf<-paste0(cpf,collapse='')
+#Finalmente, validamos e verificamos a regiao fiscal do CPF dado
+vCPF(cpf)
+```

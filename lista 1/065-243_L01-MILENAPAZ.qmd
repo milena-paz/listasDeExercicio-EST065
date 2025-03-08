@@ -1,0 +1,417 @@
+---
+title: "Atividade 1"
+author: "Milena Paz Freitas"
+format:
+  html:
+    toc: true
+editor: visual
+theme: united
+self-contained: true
+---
+
+## Questão 1
+
+**a. Construa a matriz `minhaMat.`**
+
+```{r}
+minhaMat<- matrix(c(6,112,5,545,34,113, 9, 546,923, 114, 34,
+  547,5 ,115 ,76 ,548 ,0 ,116 ,2 ,549), byrow=T,ncol=4)
+```
+
+**b. Obtenha a média de cada linha.**
+
+```{r}
+rowMeans(minhaMat)
+#alternativamente:
+#apply(minhaMat,1,mean)
+```
+
+**c. Obtenha a média de cada coluna.**
+
+```{r}
+colMeans(minhaMat)
+#alternativamente:
+#apply(minhaMat,2,mean)
+```
+
+**d. Ordene as colunas em ordem ascendente.**
+
+```{r}
+minhaMat <- apply(minhaMat, 2,sort)
+```
+
+**e. Use a função apply para executar a operação módulo da divisão por 10 em cada elemento da matriz (A nova matriz contém o resto da divisão por 10).**
+
+```{r}
+apply(minhaMat,c(1,2),"%%",10)
+```
+
+## Questão 2
+
+**a. Use três funções da família apply para o obter o mínimo de cada coluna do conjunto de dados. Armazene cada resultado em um objeto separado(`l`, `s` e `m`) e mostre suas saídas.**
+
+```{r}
+#lapply
+(l<-lapply(mtcars,min))
+
+#sapply
+(s<-sapply(mtcars,min))
+
+#mapply
+(m<-mapply(mtcars,FUN=min))
+
+```
+
+**b. Coloque os três objetos `l`, `s` e `m` na lista `lista.objetos`.**
+
+```{r}
+lista.objetos <- list(l=l,s=s,m=m)
+```
+
+**c. Use uma função apply adequada para obter a classe de cada um dos três elementos da lista `lista.objetos`.**
+
+```{r}
+classes <- sapply(lista.objetos, FUN=class)
+```
+
+**d. Qual a classe da saída de cada uma das três funções usadas no exercício?**
+
+```{r}
+classes
+```
+
+**e. Repita o exercício usando estruturas de controle. Compare o tempo entre as duas abordagens (Estruturas de controle e família apply)**
+
+```{r}
+f<- numeric(0)
+## Tempo de execução com família apply:
+inicio <- Sys.time()
+a<-apply(mtcars,2,min)
+class(a)
+tempo.apply<-Sys.time() - inicio
+## Tempo de execução com estruturas de controle:
+inicio <- Sys.time()
+for(i in 1:11){
+  f<-append(f,min(mtcars[,i]))
+}
+class(f)
+(Sys.time() - inicio) - tempo.apply
+
+```
+
+## Questão 3
+
+**a. Use a função mapply para obter uma lista de 10 elementos. O primeiro elemento da lista é uma sequência de 10 caracteres “A”; a segunda, 9 caracteres “F”, que seguem alternando-se até o último elemento o qualpossui um único caractere.**
+
+```{r}
+inicio<- Sys.time()
+mapply(x=c(10:1),y=c("A","F"),FUN=function(x,y){
+  list(rep(y,x))
+})
+tempo.apply <- Sys.time() - inicio
+```
+
+**b. Ajuste a função para obter a numeração adequada de cada elemento dalista. Dica: argumento `USE.NAMES`**
+
+```{r}
+x=c(10:1)
+names(x)<- 10:1
+y=c("A","F")
+mapply(x,y,FUN=function(x,y){
+  list(rep(y,x))
+},USE.NAMES = T)
+```
+
+**c. Repita o exercício usando estruturas de controle. Compare o tempo entre as duas abordagens (Estruturas de controle e família apply).**
+
+```{r}
+#estrutura de controle
+lista <- list()
+inicio <- Sys.time()
+for(i in 10:1){
+  if(i%%2==0)
+    lista[[i]] <- rep("F",times=i)
+  else
+    lista[[i]] <- rep("A",times=i)
+}
+lista
+(Sys.time() - inicio) - tempo.apply
+```
+
+## Questão 4
+
+**a. Use uma função apply apropriada para obter a soma de homens e mulheres à bordo.**
+
+```{r}
+inicio <- Sys.time()
+apply(Titanic,2,sum)
+tempo.apply <- Sys.time() - inicio
+```
+
+**b. Construa uma tabela com a soma de sobreviventes pela variável `Sex`**
+
+```{r}
+inicio <- Sys.time()
+apply(Titanic,c(2,4),sum)
+tempo.apply <- tempo.apply + (Sys.time() - inicio)
+```
+
+**c. Obtenha uma tabela com a quantidade de passageiros pelas variáveis `Sex` e `Age`.**
+
+```{r}
+inicio <- Sys.time()
+apply(Titanic,c(2,3),sum)
+tempo.apply <- tempo.apply + (Sys.time() - inicio)
+```
+
+**d. Repita o exercício usando estruturas de controle. Compare o tempo entre as duas abordagens (Estruturas de controle e família apply).**
+
+```{r}
+inicio <- Sys.time()
+t<-numeric(2)
+names(t)<- c("Male","Female")
+for(sx in 1:2) t[sx]<- sum(Titanic[1:4,sx,1:2,1:2])
+t
+
+t<-matrix(nrow=2,ncol=2)
+colnames(t)<- c("No","Yes")
+rownames(t)<- c("Male","Female")
+for(sx in 1:2){
+  for(v in 1:2)
+    t[sx,v]<- sum(Titanic[1:4,sx,1:2,v])
+}
+t
+
+t<-matrix(nrow=2,ncol=2)
+colnames(t)<- c("Child","Adult")
+rownames(t)<- c("Male","Female")
+for(sx in 1:2){
+  for(i in 1:2)
+    t[sx,i]<- sum(Titanic[1:4,sx,i,1:2])
+}
+t
+(Sys.time() - inicio) - tempo.apply
+```
+
+## Questão 5
+
+**a. Crie uma lista de quatro matrizes e denomine-a `lista.obj`.**
+
+```{r, warning=FALSE}
+primeira <- matrix(38:66, 3)
+segunda <- matrix(56:91, 3)
+terceira <- matrix(82:145, 3)
+quarta <- matrix(46:93, 5)
+lista.obj<-list(primeira, segunda, terceira, 
+quarta)
+```
+
+**b. Extraia a segunda coluna de cada matriz dessa lista de matrizes.**
+
+```{r}
+inicio <- Sys.time()
+lapply(lista.obj,FUN= function(x) x[,2] )
+tempo.apply<-Sys.time() - inicio
+```
+
+**c. Extraia a terceira linha de cada matriz dessa lista de matrizes.**
+
+```{r}
+inicio <- Sys.time()
+lapply(lista.obj, FUN= function(x) x[3,])
+tempo.apply<- tempo.apply + (Sys.time() - inicio)
+```
+
+**d. Repita o exercício usando estruturas de controle. Compare o tempo entre as duas abordagens (Estruturas de controle e família apply)**
+
+```{r}
+inicio <- Sys.time()
+for(i in 1:4){
+  print(lista.obj[[i]][,2])
+}
+for(i in 1:4){
+  print(lista.obj[[i]][3,])
+}
+(Sys.time() - inicio)-tempo.apply
+```
+
+## Questão 6
+
+**a. Obtenha um box-plot de cada variável quantitativa do conjunto de dados `iris`, estratificada pela variável `Species`.**
+
+```{r,echo=FALSE}
+rm(a)
+```
+
+```{r}
+inicio <- Sys.time()
+a <- by(iris[-5], iris$Species, FUN=boxplot)
+tempo.apply <- Sys.time() - inicio
+#esse a recebendo o by esconde as caracteristicas do boxplot que,
+#por algum motivo, ele imprime quando se usa o by
+```
+
+**b. O pacote "vioplot" tem a função `vioplot` para construção de *violin plots* (verifique seu formato!). Construa *violin plots* de cada variável quantitativa do conjunto de dados, estratificando-a pelo fator `Species`. Remova todos os números do eixo x e usa a cor `“salmon”`.**
+
+```{r,output=FALSE}
+library(vioplot)
+```
+
+```{r}
+inicio <- Sys.time()
+a<-by(iris[-5], INDICES=iris$Species, FUN=vioplot,col="salmon",)
+tempo.apply <- tempo.apply + (Sys.time() - inicio)
+```
+
+**c. Repita o exercício usando estruturas de controle. Compare o tempo entre as duas abordagens (Estruturas de controle e família apply).**
+
+```{r}
+inicio <- Sys.time()
+#boxplot
+for(i in unique(iris$Species)){
+  boxplot(iris[iris$Species==i,-5], main=i)
+}
+#violin plot
+for(i in unique(iris$Species)){
+  vioplot(iris[iris$Species==i,-5], main=i, col="salmon")
+}
+(Sys.time() - inicio) - tempo.apply
+```
+
+## Questão 7
+
+**a. Descubra qual das variáveis do conjunto de dados `iris` não é numérica.**
+
+```{r}
+inicio <- Sys.time()
+nn<-!sapply(iris,FUN=is.numeric)
+tempo.apply <- (Sys.time() - inicio)
+```
+
+**b. Identifique os níveis desse fator (utilize a função level).**
+
+```{r}
+levels(iris[,nn])
+```
+
+**c. Ao invés disso, experimente a função unique e compare a saída**
+
+```{r}
+unique(iris[,nn])
+```
+
+**d. Repita o item (a) usando estruturas de controle. Compare o tempo entre as duas abordagens (Estruturas de controle e família apply).**
+
+```{r}
+inicio <- Sys.time()
+for(i in 1:5){
+  nn[i]<- !is.numeric(iris[,i])
+}
+(Sys.time() - inicio)-tempo.apply
+```
+
+## Questão 8
+
+```{r}
+data(diamonds, package="ggplot2")
+```
+
+**a. Quais são as colunas de classe não numérica?**
+
+```{r}
+inicio <- Sys.time()
+!sapply(diamonds,FUN=is.numeric)
+tempo.apply <- Sys.time() - inicio
+```
+
+**b. Obtenha a média das colunas 8, 9 e 10 das observações 10000 a 11000.**
+
+```{r}
+inicio <- Sys.time()
+sapply(diamonds[10000:11000,c(8,9,10)],mean)
+tempo.apply <- (Sys.time() - inicio) + tempo.apply
+```
+
+**c. Repita (b), arredondando para um dígito.**
+
+```{r}
+medias <- round(sapply(diamonds[10000:11000,c(8,9,10)],mean),1)
+```
+
+**d. Ordene os resultados arredondados em ordem crescente.**
+
+```{r}
+sort(medias)
+```
+
+**e. Repita o exercício usando estruturas de controle. Compare o tempo entre as duas abordagens (Estruturas de controle e família apply).**
+
+```{r}
+
+nn<- logical(0)
+inicio <- Sys.time()
+#variaveis nao numericas
+for(i in 1:10){
+  nn<-append(nn,!is.numeric(diamonds[,i]))
+}
+names(diamonds[,nn])
+#medias de x y e z nas linhas 10 mil a 1,1 mil
+for(i in 8:10){
+  print(mean(diamonds[10000:11000,i]))
+}
+(Sys.time()-inicio) - tempo.apply
+```
+
+## Questão 9
+
+**a. Calcule a mediana de cada coluna ordenada pelo número de carburadores. Use os argumentos padrão "x", "by" e "FUN". (`mtcars{datasets}`)**
+
+```{r}
+inicio<- Sys.time()
+aggregate(x=mtcars[1:10], by=list(mtcars$carb), FUN=median)
+tempo.apply<- Sys.time() - inicio
+```
+
+**b. Repita o item(a), usando a notação ‘formula’ como argumento.**
+
+```{r}
+aggregate(. ~ carb,data=mtcars, FUN=median)
+```
+
+**c. Repita o item(a), usando estruturas de controle. Compare o tempo entre as duas abordagens (Estruturas de controle e família apply).**
+
+```{r}
+carbs <- sort(unique(mtcars$carb))
+tabela <- matrix(ncol=10,nrow=6)
+rownames(tabela)<- as.character(carbs)
+colnames(tabela)<-names(mtcars)[-11]
+inicio <- Sys.time()
+for(i in 1:10){
+  for(j in 1:6){
+    tabela[j,i] <- median(mtcars[mtcars$carb==carbs[j],i])
+  }
+}
+tabela
+(Sys.time() - inicio) - tempo.apply
+```
+
+## Questão 10
+
+**A função `system.time` retorna o tempo de operações em R. Verifique como esse comando funciona.**
+
+**Para uma matriz X, 107 × 2 e um vetor y de comprimento 107 , calcule (algumas quantas vezes) o produto t(X)y, usando multiplicação de matrizes e a função crossproduct. Qual é o procedimento mais rápido?**
+
+```{r}
+X<- matrix(rnorm(214),ncol=2)
+y<- rnorm(107)
+t1<- function(n=1E20){
+  system.time(t(X)%*%y)
+}
+#multiplicacao de matrizes do R
+system.time(t1(),gcFirst = T)
+t2<- function(n=1E20){
+  system.time(crossprod(X,y))
+}
+#funcao crossproduct
+system.time(t2(),gcFirst = T)
+```

@@ -1,0 +1,184 @@
+---
+title: "Lista #4 - Gráficos"
+author: "Milena Paz Freitas"
+lang: "pt-BR"
+date: today
+self-contained: true
+format: html
+toc: true
+editor: visual
+---
+
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(fig.align = "center")
+```
+
+# Questão 1
+
+**Enunciado:** Em uma única figura, construa o gráfico das funções seno, cosseno e seno + cosseno, com diferentes cores e estilos. Use 1.000 pontos no intervalo \[– 10, 10\], apresentando uma figura com um título, subtítulo e identificando os rótulos dos eixos. Coloque uma legenda identificando cada função de acordo com sua cor e tipo de linha.
+
+```{r}
+#ajustando margens
+par(mar=c(5,4,2,1))
+#base do plot
+plot(x=0,y=0,type="n",xlim=c(-10,10),ylim=c(-1.7,1.7),xlab="x",
+     ylab="f(x)",main="Gráficos de funções trigonométricas",
+     sub="no intervalo [-10,10]",font.sub=2)
+#deixa as linhas mais grossas
+#(se eu colocar no par() anterior ele deixa a caixa do plot grossona)
+par(lwd=2)
+
+#curvas
+curve(sin(x)+cos(x),n=1000,from=-10,to=10, col="blue",add=T)
+curve(cos,n=1000,from=-10,to=10, col="red",lty=2,add=T)
+curve(sin,n=1000,from=-10,to=10,lty=3,add=T)
+
+#legenda
+legend("topleft", inset=c(-0.01,-.02),
+       c("senx", "cosx","senx+cosx"),col=c("blue","red","black"),
+       lty=1:3,xpd=T,bty="n",cex=.9)
+```
+
+# Questão 2
+
+**Enunciado**: Crie dois vetores, x e y e use o comando plot(x, y, type = “l”) para construir as seguintes figuras. Use o comando par() para apresentá-las em uma única figura com 4 gráficos distintos (itens a, b, c e d) os demais gráficos devem ser individuais:
+
+a.  Um retângulo;
+b.  Um quadrado;
+c.  Um círculo;
+d.  Uma espiral;
+e.  Um círculo, com um hexágono inscrito e outro hexágono circunscrito. Indique na figura os respectivos perímetros.
+
+```{r}
+
+par(mfrow=c(2,2),mar=c(1,1,4,1),lwd=2)
+
+# A) retângulo
+x<- c(-1,-1,1,1,-1)
+y<- c(0,1,1,0,0)
+plot(x=x,y=y,type="l",
+     axes=F,xlim=c(-1,1),ylim=c(-1,1),asp=1, main="Retângulo")
+
+# B) quadrado
+x<- c(-1,-1,1,1,-1)
+y<- c(-1,1,1,-1,-1)
+plot(x=x,y=y,type="l",
+     axes=F,xlim=c(-1,1),ylim=c(-1,1),asp=1, main="Quadrado")
+
+##para fazer o circulo e a espiral, usei coordenadas polares (para facilitar)
+
+# C) circulo
+teta<- 2*pi*seq(0,1,0.01)
+x <- cos(teta)
+y <- sin(teta)
+plot(x=x,y=y,type="l",
+     axes=F,xlim=c(-1,1),ylim=c(-1,1),asp=1, main="Círculo")
+
+# D) espiral
+teta<- 2*pi*seq(0,5,0.01)
+r<- seq(0,1,length.out=length(teta))
+x <- r*cos(teta)
+y <- r*sin(teta)
+plot(x=x, y=y,type="l",
+     axes=F,xlim=c(-1,1),ylim=c(-1,1),asp=1, main="Espiral")
+
+par(mfrow=c(1,1))
+
+# E) círculo, com um hexágono inscrito e outro hexágono circunscrito.
+
+##funcao que da coordenadas polares de poligono regular
+##inscrito em circunferencia de raio r centrada na origem
+coord <- function(n,r=1){
+  angulos<- (0:n)*2*pi/n
+  x <- r*cos(angulos)
+  y <- r*sin(angulos)
+  return(list(x=x,y=y))
+}
+
+##circulo
+res<- coord(50)
+plot(x=res$x,y=res$y,type="l",axes=F,xlim=c(-1,1),ylim=c(-1,1),
+     xlab=NA,ylab=NA,asp=1,
+     main="Círculo com hexágonos inscrito e circunscrito")
+text(0,.5,"Perímetros:", font=2,cex=1.3)
+text(0,.35,paste("Círculo:",round(2*pi,3)),cex=1.2)
+
+##hexagono inscrito
+res<- coord(6)
+lines(x=res$x,y=res$y,col="red")
+text(0,.20,paste("Hexágono inscrito:",12*sin(pi/6)),
+     col="red",cex=1.2)
+
+##hexagono circunscrito
+res<- coord(6,r=1/cos(pi/6))
+lines(x=res$x,y=res$y,col="blue")
+text(0,.05,paste("Hexágono circunscrito:",round(12*tan(pi/6),3)),
+     col="blue",cex=1.2)
+```
+
+# Questão 3
+
+**Enunciado:** Considere as figuras de Lissajous (pesquise sobre seu formato). Elas são definidas como:
+
+$$
+z(x)=\binom{\sin(ax)}{\cos(ax)}=\binom{z_1}{z_2}
+$$ ou, em outra notação: $$
+z_1(x)=\sin(ax) \\
+z_2(x)=\cos(bx)
+$$ em que *a* e *b* são inteiros positivos e $0 \leq x \leq 2\pi$. Plote $z_1$ versus $z_2$ , usando linhas para conectar os pontos *a* e *b*, escolha diferentes valores de a e b.
+
+a.  Plote em uma única figura com vários gráficos distintos.
+
+b.  Compare as figuras para (a, b) = (3, 4), (3, 6) e (6, 8). Comente sobre a influência desses parâmetros na forma das curvas.
+
+```{r}
+#| fig-height: 6
+#| fig-width: 6
+par(mar=c(3.8,3.8,2,1),mfrow=c(3,2))
+x<-seq(0,2*pi,0.01)
+## A)
+##variando a
+
+paleta<- RColorBrewer::brewer.pal(6,"Dark2")
+for(i in 1:6){
+    z1<- sin(i*x)
+    z2<- cos(x)
+    plot(x=z1,y=z2,type="l",
+         main=paste0("Curva de Lissajous p/ a=",i," e b=1"),
+         col=paleta[i],lwd=1.3,axes=F,asp=1)
+    box()
+    axis(side=2,at=c(-1,0,1))
+    axis(side=1,at=c(-1,0,1))
+}
+
+##variando b
+z1<- sin(1*x)
+for(i in 1:6){
+    z2<- cos(i*x)
+    plot(x=z1,y=z2,type="l",
+         main=paste0("Curva de Lissajous p/ a=1 e b=",i),
+         col=paleta[i],lwd=1.3,axes=F,asp=1)
+    box()
+    axis(side=2,at=c(-1,0,1))
+    axis(side=1,at=c(-1,0,1))
+}
+
+## B)
+par(mfrow=c(3,1))
+a<-c(3,3,6)
+b<-c(4,6,8)
+for(i in 1:3){
+    z1<- sin(a[i]*x)
+    z2<- cos(b[i]*x)
+    plot(x=z1,y=z2,type="l",
+         main=paste0("Curva de Lissajous p/ a=",a[i]," e b=",b[i]),
+         col=paleta[i],lwd=1.3,axes=F)
+    box()
+    axis(side=2,at=c(-1,0,1))
+    axis(side=1,at=c(-1,0,1))
+}
+#Observa-se que, ao multiplicarmos o par (a,b) por um escalar (nesse caso 2),a figura se 
+#mantém a mesma. Podemos, então, afirmar que a figura se altera de acordo com a razão a/b
+#além disso, nos gráficos da letra A), podemos observar que os à esquerda
+#da primeira figura são idênticos aos seus correspondentes da segunda, só que "deitados"
+```
