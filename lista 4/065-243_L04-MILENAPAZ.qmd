@@ -123,8 +123,11 @@ text(0,.05,paste("Hexágono circunscrito:",round(12*tan(pi/6),3)),
 $$
 z(x)=\binom{\sin(ax)}{\cos(ax)}=\binom{z_1}{z_2}
 $$ ou, em outra notação: $$
-z_1(x)=\sin(ax) \\
-z_2(x)=\cos(bx)
+\begin{aligned}
+& z_1(x)=\sin(ax)
+\\
+& z_2(x)=\cos(bx)
+\end{aligned}
 $$ em que *a* e *b* são inteiros positivos e $0 \leq x \leq 2\pi$. Plote $z_1$ versus $z_2$ , usando linhas para conectar os pontos *a* e *b*, escolha diferentes valores de a e b.
 
 a.  Plote em uma única figura com vários gráficos distintos.
@@ -178,7 +181,52 @@ for(i in 1:3){
     axis(side=1,at=c(-1,0,1))
 }
 #Observa-se que, ao multiplicarmos o par (a,b) por um escalar (nesse caso 2),a figura se 
-#mantém a mesma. Podemos, então, afirmar que a figura se altera de acordo com a razão a/b
+#mantém a mesma. Podemos, então, supor que a figura se altera de acordo com a razão a/b
 #além disso, nos gráficos da letra A), podemos observar que os à esquerda
 #da primeira figura são idênticos aos seus correspondentes da segunda, só que "deitados"
 ```
+
+# Questão 4
+
+**Enunciado:** Escreva uma função que crie um layout 2 x 2 para gráficos, com o dobro do tamanho dos caracteres de texto no gráfico, construa 4 histogramas de 100 números aleatórios normalmente distribuídos e adicione título a cada gráfico. O tamanho das amostras a ser geradas deve ser um parâmetro da função, especificando-se 100 como default. Assegure-se que os parâmetros gráficos retornem a seus valores iniciais após a execução da função
+
+```{r}
+graficos <- function(n=100){
+  op<-par(no.readonly=T)
+  par(mfrow=c(2,2),cex.main=2,cex.sub=2,cex.lab=2,cex.axis=2)
+  for(i in 1:4){
+    amostra<-rnorm(n)
+    hist(amostra,freq=F,main=paste("Histograma da amostra",i),
+         sub=paste0("n=",n))
+  }
+  par(op)
+}
+
+graficos()
+```
+
+# Questão 5
+
+**Enunciado:** Utilize o conjunto de dados `Owls{glmmTMB}`. Os dados foram coletados em duas noites consecutivas. Se você selecionar os dados de um dos ninhos, as observações cobrirão ambas as noites. As duas noites diferiram pela dieta oferecida ("`Deprived`", "`Satiated`").
+
+a.  Para obter observações de uma das noites, selecione todas as observações para um determinado ninho e dieta. Use as funções `ifelse()` e `paste()` para criar uma nova variável categórica que defina as observações de uma única noite em um certo ninho.
+
+b.  Desenvolva um código para plotar as variáveis `SiblingNegotiation` (negociação no ninho) vs. `ArrivalTime` (tempo de chegada) para as observações referentes ao mesmo ninho e noite. Salve os gráficos em um único arquivo pdf. (Identifique seu nome no início do arquivo.)
+
+c.  Aplique uma transformação logarítmica (use 10 como base) nos dados de negociação no ninho. Adicione o valor 1 para evitar problemas com o log de 0.
+
+d.  Plote os dados transformados de negociação no ninho em relação ao tempo de chegada. Observe que o horário de chegada é codificado como `23.00`, `24.00`, `25.00`, `26.00` e assim por diante. Em vez de usar os rótulos `25`, `26`, etc. para a hora de chegada, use `01.00`, `02.00` e assim por diante.
+
+e.  Faça o mesmo gráfico do item (d), mas use como rótulo do eixo vertical a escala original (inverso dos valores transformados). Isso significa usar os dados de negociação no ninho na escala log, mas com o rótulo 1, se o valor transformado em log for `0,10`, se o valor transformado em log for 1 e assim por diante.
+
+f.  Refaça o item (e), agora com o rótulo 100, se o valor na escala original for *1*,$10^1$ , se o valor na escala original for *10*, e assim por diante.
+
+g.  Aplicação de suavizador ao gráfico criado em (e) para visualizar o padrão dos dados para os extratos masculino e feminino:
+
+    i.  Plote os dados dos machos, ajuste o suavizador e sobreponha essa linha ao gráfico.
+
+    ii. Repita o procedimento para os dados femininos.
+
+    iii. Use uma legenda para identificar as diferentes curvas.
+
+h.  Faça o mesmo para o fator dieta
