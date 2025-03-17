@@ -7,6 +7,7 @@ self-contained: true
 format: html
 toc: true
 editor: visual
+subtitle: "EST065 — 2024-3"
 ---
 
 ```{r, setup, include=FALSE}
@@ -217,9 +218,9 @@ c.  Aplique uma transformação logarítmica (use 10 como base) nos dados de neg
 
 d.  Plote os dados transformados de negociação no ninho em relação ao tempo de chegada. Observe que o horário de chegada é codificado como `23.00`, `24.00`, `25.00`, `26.00` e assim por diante. Em vez de usar os rótulos `25`, `26`, etc. para a hora de chegada, use `01.00`, `02.00` e assim por diante.
 
-e.  Faça o mesmo gráfico do item (d), mas use como rótulo do eixo vertical a escala original (inverso dos valores transformados). Isso significa usar os dados de negociação no ninho na escala log, mas com o rótulo 1, se o valor transformado em log for `0,10`, se o valor transformado em log for 1 e assim por diante.
+e.  Faça o mesmo gráfico do item (d), mas use como rótulo do eixo vertical a escala original (inverso dos valores transformados). Isso significa usar os dados de negociação no ninho na escala log, mas com o rótulo `1` se o valor transformado em log for `0`,`10` se o valor transformado em log for `1`, `100` e assim por diante.
 
-f.  Refaça o item (e), agora com o rótulo 100, se o valor na escala original for *1*,$10^1$ , se o valor na escala original for *10*, e assim por diante.
+f.  Refaça o item (e), agora com o rótulo $10^0$ se o valor na escala original for *1*,$10^1$ se o valor na escala original for *10*, e assim por diante.
 
 g.  Aplicação de suavizador ao gráfico criado em (e) para visualizar o padrão dos dados para os extratos masculino e feminino:
 
@@ -230,3 +231,177 @@ g.  Aplicação de suavizador ao gráfico criado em (e) para visualizar o padrã
     iii. Use uma legenda para identificar as diferentes curvas.
 
 h.  Faça o mesmo para o fator dieta
+
+```{r}
+## A)
+data(Owls,package="glmmTMB")
+ninho.noite <- factor(paste(Owls$Nest,ifelse(Owls$FoodTreatment=="Deprived", 1, 2)))
+Owls$Nest.Treatment <- ninho.noite
+
+## B)
+pdf("MILENAPAZ-OwlsPlots.pdf")
+for(i in levels(ninho.noite)){
+    ttl <- unlist(strsplit(i,split=" "))
+    plot(ArrivalTime ~ SiblingNegotiation,
+      data=Owls[Owls$Nest.Treatment==i,],
+      main=paste("Ninho:",ttl[1],"\n Noite(Dieta):",ttl[2]))
+}
+dev.off()
+
+## C)
+#adicionando 1 aos zeros para evitar problemas com log0
+Owls[which(Owls[,5]==0),5] <- 1
+Owls<- transform(Owls, logNegotiation = log10(SiblingNegotiation))
+
+## D)
+plot( logNegotiation ~ ArrivalTime,data=Owls,axes=F)
+axis(2)
+axis(1, at= seq(22,30,2), labels= seq(22,30,2)-21)
+box()
+
+## E)
+plot( logNegotiation ~ ArrivalTime,data=Owls,axes=F,
+      ylab="SiblingNegotiation")
+axis(1, at= seq(22,30,2), labels=seq(22,30,2)-21)
+axis(2, at= seq(0,1.5,0.5), labels=round(10^seq(0,1.5,0.5),1))
+box()
+
+## F)
+plot( logNegotiation ~ ArrivalTime,data=Owls,axes=F,
+      ylab="SiblingNegotiation")
+axis(1, at= seq(22,30,2), labels=seq(22,30,2)-21)
+axis(2,at=seq(0,1.5,0.5),labels=expression(10^0,10^0.5,10^1,10^1.5))
+box()
+
+## G)
+
+#dados dos machos
+plot( logNegotiation ~ ArrivalTime,data=subset(Owls,SexParent=="Male"),axes=F,
+      ylab="SiblingNegotiation",main="Negociação no ninho vs. Tempo de chegada (Machos)")
+axis(1, at= seq(22,30,2), labels=seq(22,30,2)-21)
+axis(2,at=seq(0,1.5,0.5),labels=round(10^seq(0,1.5,0.5),1))
+box()
+
+#suavizacao
+ml<-lm(logNegotiation ~ ArrivalTime, data=Owls)
+abline(ml,col="red",lty=2,lwd=2)
+
+#dados das femeas
+plot( logNegotiation ~ ArrivalTime,data=subset(Owls,SexParent=="Female"),axes=F,
+      ylab="SiblingNegotiation", main="Negociação no ninho vs. Tempo de chegada (Pais fêmeas)")
+axis(1, at= seq(22,30,2), labels=seq(22,30,2)-21)
+axis(2,at=seq(0,1.5,0.5),labels=round(10^seq(0,1.5,0.5),1))
+box()
+fl<-lm(logNegotiation ~ ArrivalTime, data=Owls)
+abline(fl,col="red",lty=2,lwd=2)
+```
+
+# Questão 6
+
+**Enunciado:** Deseja-se analisar o comportamento da distribuição da mediana de amostras provenientes de uma população assimétrica. Escreva uma função que simule a distribuição da mediana amostral. A função deve aceitar pelo menos dois argumentos: uma função para gerar dados aleatórios (rgamma, runif, rnorm, rexp, etc.) e um tamanho de amostra. Usando o gerador de números aleatórios e o tamanho da amostra, simule a distribuição amostral da mediana amostral. Pede-se que a única saída dessa função seja um histograma da distribuição simulada. Na figura, apresente a média e o desvio padrão da distribuição amostral simulada, bem como o nome da função usada para gerar os dados aleatórios.
+
+```{r}
+funcao <- function(n=100,fun = rexp, ...){
+  #-------------------------------------------------#
+  # n: tamanho da amostra
+  # fun: funcao de geracao de dados aleatorios
+  # ...: argumentos extras para fun
+  #-------------------------------------------------#
+  medianas <- numeric(0)
+  for(i in 1:1000){
+    #gera amostra aleatoria
+    amostra <- fun(n, ...)
+    #Guarda a mediana amostral
+    medianas[i] <- median(amostra)
+  }
+  media<- mean(medianas)
+  dp <- sd(medianas)
+  #plota histograma
+  hist(medianas,freq=F,
+       main=paste("Histograma da mediana amostral simulada p/ fun=",deparse(substitute(fun))))
+  #linha da media e sua legenda
+  abline(v=media,col="red",lty=2,lwd=2)
+  legend("topright", "Média", lty=2,lwd=2,col="red")
+  #texto com o valor da media e desvio padrao
+  mtext(col="red",side=1,font=2,
+       text=paste0("μ= ",round(media,2),"\n σ= ",round(dp,2)),adj=0.95, padj=-4)
+}
+#exemplos
+funcao(fun=rexp,rate=4)
+funcao(500,rbeta,shape1=3,shape2=4)
+```
+
+# Questão 7
+
+**Enunciado:** Use o R Base, e apresente códigos para reconstruir as Figuras 1 e 2, com as seguintes recomendações:
+
+a.  Figura 1: O conjunto de dados usado é o `chickwts{datasets}`.Aprimore seu gráfico de maneira a:
+
+    i.  Deixar os pontos fora da região de observações típicas do boxplot com o dobro da dimensão dos pontos situados dentro da região típica do gráfico.
+
+    ii. Corrija o erro de os pontos fora da região típica dos dados serem plotados mais de uma vez.
+
+    iii. Em sua caixa, apresente uma linha grossa, vermelha, indicando a média dos valores do grupo
+
+b.  Figura 2: Usado o conjunto de dados `trees{datasets}`. A linha vermelha em cada caixa indica a média da variável indicada. Aprimore o gráfico e apresente à esquerda o gráfico com os box-plots horizontais e à direita o eixo com a escala de valores das variáveis no gráfico com os box-plots verticais. Para ganhar espaço se deseja que a eixo da margem direita do gráfico da esquerda coincida com o eixo da esquerda do gráfico da direita.
+
+```{r}
+## A)
+data(chickwts)
+
+a <- boxplot(weight~feed,data=chickwts,col="white",pch="",medcol="red",medlwd=3)
+#inspecionando a achamos os outliers que devemos ignorar
+
+subgrupo<- chickwts[-which(chickwts$weight %in% a$out),]
+subgrupo2<- chickwts[which(chickwts$weight %in% a$out),]
+#obs: esse código só funciona porque esses valores NAO se repetem no conjunto
+#de dados; caso contrário eu teria de adaptá-lo
+
+#plota os pontos dentro do intervalo
+stripchart(weight~feed,data=subgrupo,pch=19,col=1:6,
+           vertical=T,add=T,method="jitter",cex=.5)
+#plota os pontos fora do intervalo
+stripchart(weight~feed,data=subgrupo2,pch=19,col=6,
+           vertical=T,add=T,cex=1)
+```
+
+```{r}
+## B)
+data(trees)
+medias<- apply(trees,2,mean)
+par(mfrow=c(1,2),mar=c(5.1,4.1,4.1,0))
+#HORIZONTAIS
+plot.new()
+plot.window(xlim=c(min(trees),max(trees)),ylim=c(0.5,3.5))
+with(trees,{
+    boxplot(Girth,add=T,at=1,col="darkslategray1",
+            horizontal=T,boxwex=1.5,axes=F)
+    boxplot(Height,add=T,at=2,col="darkslategray1",
+            horizontal=T,boxwex=1.5,axes=F)
+    boxplot(Volume,add=T,at=3,col="darkslategray1",
+            horizontal=T,boxwex=1.5)
+    points(x=medias,y=1:3,pch=19,col="red")
+    segments(medias,y0=1:3-0.375,y1=1:3+0.375,col="red",lwd=2)
+  }
+)
+axis(2,at=1:3, labels=c("Girth","Height","Volume"))
+#VERTICAIS
+par(mar=c(5.1,0,4.1,4.1))
+plot.new()
+plot.window(xlim=c(0.5,3.5),ylim=c(min(trees),max(trees)))
+with(trees,{
+    boxplot(Girth,add=T,at=1,col="darkslategray1",
+            boxwex=1.5,axes=F)
+    boxplot(Height,add=T,at=2,col="darkslategray1",
+            boxwex=1.5,axes=F)
+    boxplot(Volume,add=T,at=3,col="darkslategray1",
+            boxwex=1.5,axes=F)
+    points(x=1:3,y=medias,pch=19,col="red")
+    segments(1:3-0.375,medias,1:3+0.375,col="red",lwd=2)
+  }
+)
+axis(2,tcl=0.25,labels=NA)
+text(x=0.51,y=c(20,40,60,80),labels=c(20,40,60,80),srt=90,cex=.9)
+axis(1,at=1:3, labels=c("Girth","Height","Volume"))
+box()
+```
